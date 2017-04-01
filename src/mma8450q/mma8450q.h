@@ -9,6 +9,9 @@
  *                      - Added register addresses
  */
 
+#ifndef MMA8450Q_H_
+#define MMA8450Q_H_
+
 // Register definitions from Table 11 in datasheet
 #define MMA_STATUS  0x00
 #define OUT_X_LSB   0x05
@@ -69,3 +72,5 @@
 #define OFF_X       0x3D
 #define OFF_Y       0x3E
 #define OFF_Z       0x3F
+
+#endif

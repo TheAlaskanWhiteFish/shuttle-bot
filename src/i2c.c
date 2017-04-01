@@ -14,12 +14,6 @@
 #include "msp430x22x4.h"
 #include "stdint.h"
 
-typedef union
-{
-    uint8_t u8[2];
-    uint16_t u16;
-} ByteWord_t;
-
 void I2CInitMaster(void)
 //-------------------------------------------------------------------------
 // Func:  Configure I2C for master mode, SMCLK source
@@ -35,20 +29,51 @@ void I2CInitMaster(void)
     UCB0CTL1 &= ~UCSWRST;                   // start USCB0
 }
 
-void I2CSendByte(uint8_t addr, uint8_t data)
+void I2CSetSlaveAddr(uint16_t addr)
 //-------------------------------------------------------------------------
-// Func:  Send a single byte over I2C. Note: this is blocking until the bus
-//        is free and the transaction is complete
+// Func:  Set I2C slave address
 // Args:  addr - slave address
-//        data - 8 bit data to send
 // Retn:  None
 //-------------------------------------------------------------------------
 {
-    UCB0I2CSA = addr;               // set slave address
+    UCB0I2CSA = addr;   // set slave address
+}
+
+void I2CSendByte(uint8_t data)
+//-------------------------------------------------------------------------
+// Func:  Send a single byte over I2C. Note: this is blocking until the bus
+//        is free and the transaction is complete
+// Args:  data - 8 bit data to send
+// Retn:  None
+//-------------------------------------------------------------------------
+{
     while(UCB0STAT & UCBBUSY);      // wait for bus to be free
     UCB0CTL1 |= UCTR | UCTXSTT;     // send start bit, slave addr, write bit
     while(!(IFG2 & UCB0TXIFG));     // wait until tx buffer is empty
     UCB0TXBUF = data;               // send data
+    while(!(IFG2 & UCB0TXIFG));     // wait until tx buffer is empty
+    UCB0CTL1 |= UCTXSTP;            // send stop bit
+    while(UCB0CTL1 & UCTXSTP);      // wait until stop bit is sent
+}
+
+void I2CSend(uint8_t * data, uint8_t length)
+//-------------------------------------------------------------------------
+// Func:  Send multiple bytes over I2C. Note: this is blocking until the bus
+//        is free and the transaction is complete. Also sends MSB first
+// Args:  data - pointer to data byte array
+//        length - length of data in bytes
+// Retn:  None
+//-------------------------------------------------------------------------
+{
+    while(UCB0STAT & UCBBUSY);      // wait for bus to be free
+    UCB0CTL1 |= UCTR | UCTXSTT;     // send start bit, slave addr, write bit
+
+    int8_t i;
+    for(i = length - 1; i >= 0; i--)
+    {
+        while(!(IFG2 & UCB0TXIFG)); // wait until tx buffer is empty
+        UCB0TXBUF = data[i];        // send data
+    }
     while(!(IFG2 & UCB0TXIFG));     // wait until tx buffer is empty
     UCB0CTL1 |= UCTXSTP;            // send stop bit
     while(UCB0CTL1 & UCTXSTP);      // wait until stop bit is sent

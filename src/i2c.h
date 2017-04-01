@@ -8,3 +8,13 @@
  *
  *  Version 1: 04/01/17 - Nathan Duprey
  */
+
+#ifndef I2C_H_
+#define I2C_H_
+
+void I2CInitMaster(void);
+void I2CSetSlaveAddr(uint16_t addr);
+void I2CSendByte(uint8_t data);
+void I2CSend(uint8_t * data, uint8_t length);
+
+#endif

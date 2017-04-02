@@ -9,9 +9,9 @@
  *                      - added init and send functions
  */
 
+ #include "stdint.h"
  #include "uart.h"
  #include "msp430x22x4.h"
- #include "stdint.h"
 
 void UARTInit(void)
 //-------------------------------------------------------------------------
@@ -21,7 +21,7 @@ void UARTInit(void)
 //-------------------------------------------------------------------------
 {
     P3SEL |= 0x30;          // P3.4 and P3.5 as uart
-                            // assuming we're running at 1MHz
+    UCA0CTL1 |= UCSSEL_2;   // assuming we're running at SMCLK = 1MHz
     UCA0MCTL = UCBRS0;      // set bit 0 of UCBRSx field
     UCA0BR0 = 104;          // 1MHz / 104 = ~9600 baud
     UCA0BR1 = 0;
@@ -50,9 +50,8 @@ void UARTSend(uint8_t * data, uint8_t length)
 //-------------------------------------------------------------------------
 {
     uint8_t i;
-    for(i = 0; i < length - 1; i++)
+    for(i = 0; i < length; i++)
     {
-        while(!(IFG2 & UCA0TXIFG)); // wait for tx bufer empty
-        UCA0TXBUF = data[i];        // put data in tx buffer
+        UARTSendByte(data[i]);
     }
 }

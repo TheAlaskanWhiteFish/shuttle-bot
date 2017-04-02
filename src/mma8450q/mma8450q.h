@@ -12,6 +12,8 @@
 #ifndef MMA8450Q_H_
 #define MMA8450Q_H_
 
+#include "stdint.h"
+
 // Register definitions from Table 11 in datasheet
 #define MMA_STATUS  0x00
 #define OUT_X_LSB   0x05

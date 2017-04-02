@@ -10,8 +10,10 @@
  *                      - added init and send functions
  */
 
-#ifndef I2C_H_
-#define I2C_H_
+#ifndef UART_H_
+#define UART_H_
+
+#include "stdint.h"
 
 void UARTInit(void);
 void UARTSendByte(uint8_t data);

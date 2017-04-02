@@ -1,0 +1,9 @@
+# IAR Files #
+#############
+Debug/**
+settings/**
+path.txt
+*.log
+*.dep
+*.ewd
+*.ewt

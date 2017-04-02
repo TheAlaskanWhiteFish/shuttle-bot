@@ -12,6 +12,8 @@
 #ifndef I2C_H_
 #define I2C_H_
 
+#include "stdint.h"
+
 void I2CInitMaster(void);
 void I2CSetSlaveAddr(uint16_t addr);
 void I2CSendByte(uint8_t data);

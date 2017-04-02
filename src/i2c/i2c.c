@@ -112,7 +112,7 @@ DataUnion_t I2CReadRegisters(uint8_t firstAddr, uint8_t numRegs)
 // Func:  Read a specified number of registers starting from firstAddr
 // Args:  firstAddr - the addredd of the first register to read
 //        numRegs - the number of registers to read
-// Retn:  None
+// Retn:  a union containing the data read back from the device
 //-------------------------------------------------------------------------
 {
     DataUnion_t inBuff;     // create input buffer
@@ -129,7 +129,7 @@ DataUnion_t I2CReadRegisters(uint8_t firstAddr, uint8_t numRegs)
     for(i = 0; i <= numRegs - 1; i++)
     {
         while(!(IFG2 & UCB0RXIFG)); // wait for byte to be read
-        inBuff.u8[i] = UCB0RXBUF;   // store byte
+        inBuff.s8[i] = UCB0RXBUF;   // store byte
 
         if(i = numRegs - 2)                 // if final byte enroute
         {

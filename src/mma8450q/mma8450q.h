@@ -78,5 +78,6 @@
 
 // function prototypes
 void MMA8450Init(void);
+int16_t * MMA8450ReadXYZStatus();
 
 #endif

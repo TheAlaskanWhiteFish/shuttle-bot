@@ -17,8 +17,8 @@
 // union data type for storing register values
 typedef union
 {
-    uint8_t u8[8];
-    uint16_t u16[4];
+    int8_t s8[8];
+    int16_t s16[4];
 } DataUnion_t;
 
 void I2CInitMaster(void);

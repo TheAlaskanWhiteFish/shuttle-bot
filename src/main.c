@@ -10,17 +10,32 @@
 #include "msp430x22x4.h"
 #include "uart/uart.h"
 #include "mma8450q/mma8450q.h"
-//#include "i2c/i2c.h"
 #include "stdint.h"
 
 #pragma vector=TIMERA1_VECTOR
 #pragma type_attribute=__interrupt
 void TimerA1Interrupt(void)
 {
+    static uint8_t cmdIndex = 0;
+    uint8_t drvCmds[4][2] = {
+        {0x60, 0xE0},           // drive forward, half speed
+        {0x40, 0xC0},           // coast to stop
+        {0x60, 0xA0},           // spin in place
+        {0x00, 0x00}            // stop
+    };
+
     switch(__even_in_range(TAIV, 10))
     {
         case TAIV_TAIFG:
-            UARTSend("hello world\r\n", 13);
+            if(cmdIndex < 4)            // only send 4 commands
+            {
+                uint8_t i = 0;
+                for(i = 0; i < 2; i++)
+                {
+                    UARTSendByte(drvCmds[cmdIndex][i]);
+                }
+                cmdIndex++;
+            }
             break;
         case TAIV_TACCR1:
             break;

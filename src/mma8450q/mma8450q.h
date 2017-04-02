@@ -77,6 +77,6 @@
 
 
 // function prototypes
-void MMA8450Init(void)
+void MMA8450Init(void);
 
 #endif

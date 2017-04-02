@@ -21,5 +21,6 @@ void MMA8450Init(void)
 //-------------------------------------------------------------------------
 {
     I2CInitMaster();                    // initialize I2C in master mode
+    I2CSetSlaveAddr(0x1C);              // set slave address for accel
     I2CSendRegister(CTRL_REG1, 0x0D);   // set active mode, +/-2g, 50Hz sample
 }

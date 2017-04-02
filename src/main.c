@@ -9,6 +9,8 @@
 
 #include "msp430x22x4.h"
 #include "uart/uart.h"
+#include "mma8450q/mma8450q.h"
+//#include "i2c/i2c.h"
 #include "stdint.h"
 
 #pragma vector=TIMERA1_VECTOR

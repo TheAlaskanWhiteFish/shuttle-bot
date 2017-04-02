@@ -106,3 +106,36 @@ void I2CSendRegister(uint8_t reg, uint8_t data)
     UCB0CTL1 |= UCTXSTP;            // send stop bit
     while(UCB0CTL1 & UCTXSTP);      // wait until stop bit is sent
 }
+
+DataUnion_t I2CReadRegisters(uint8_t firstAddr, uint8_t numRegs)
+//-------------------------------------------------------------------------
+// Func:  Read a specified number of registers starting from firstAddr
+// Args:  firstAddr - the addredd of the first register to read
+//        numRegs - the number of registers to read
+// Retn:  None
+//-------------------------------------------------------------------------
+{
+    DataUnion_t inBuff;     // create input buffer
+    uint8_t i;              // loop counter
+
+    while(UCB0STAT * UCBBUSY);  // wait until bus is free
+    UCB0CTL1 |= UCTR | UCTXSTT; // send start, address, write bit
+    UCB0TXBUF = firstAddr;      // send first register to read from
+    while(!(UCB0TXIFG & IFG2)); // wait for buffer empty
+
+    UCB0CTL0 &= ~UCTR;          // read mode
+    UCB0CTL1 |= UCTXSTT;        // send start, address, read bit
+
+    for(i = 0; i <= numRegs - 1; i++)
+    {
+        while(!(IFG2 & UCB0RXIFG)); // wait for byte to be read
+        inBuff.u8[i] = UCB0RXBUF;   // store byte
+
+        if(i = numRegs - 2)                 // if final byte enroute
+        {
+            UCB0CTL1 |= UCTXNACK | UCTXSTP; // send NACK and stop
+        }
+    }
+
+    return inBuff;
+}

@@ -14,10 +14,18 @@
 
 #include "stdint.h"
 
+// union data type for storing register values
+typedef union
+{
+    uint8_t u8[8];
+    uint16_t u16[4];
+} DataUnion_t;
+
 void I2CInitMaster(void);
 void I2CSetSlaveAddr(uint16_t addr);
 void I2CSendByte(uint8_t data);
 void I2CSend(uint8_t * data, uint8_t length);
 void I2CSendRegister(uint8_t reg, uint8_t data);
+DataUnion_t I2CReadRegisters(uint8_t firstAddr, uint8_t numRegs);
 
 #endif

@@ -10,5 +10,5 @@
 
  #include "mma8450q.h"
  #include "../i2c/i2c.h"
- #include "msp430x22x4.h"
+ #include "../msp430x22x4.h"
  #include "stdint.h"

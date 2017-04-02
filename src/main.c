@@ -12,7 +12,8 @@
 #include "stdint.h"
 
 #pragma vector=TIMERA1_VECTOR
-__interrupt void TimerA1Interrupt(void)
+#pragma type_attribute=__interrupt
+void TimerA1Interrupt(void)
 {
     switch(__even_in_range(TAIV, 10))
     {
@@ -30,11 +31,11 @@ __interrupt void TimerA1Interrupt(void)
 
 void main(void)
 {
-    WDTCTL = WDTPW | WDTHOLD;    // disable watchdog
+    WDTCTL = WDTPW | WDTHOLD;   // disable watchdog
     DCOCTL = CALDCO_1MHZ;       // 1MHz DCO
     BCSCTL1 = CALBC1_1MHZ;
     BCSCTL3 |= LFXT1S_2;        // ACLK run by VLO
-    
+
     UARTInit();     // initialize uart
     TACCR0 = 0x5DC0;
     TACTL = TASSEL_1 | ID_0 | MC_1 | TAIE;

@@ -11,7 +11,7 @@
  */
 
 #include "i2c.h"
-#include "msp430x22x4.h"
+#include "../msp430x22x4.h"
 #include "stdint.h"
 
 void I2CInitMaster(void)
@@ -54,8 +54,10 @@ void I2CSendByte(uint8_t data)
     while(UCB0STAT & UCBBUSY);      // wait for bus to be free
     UCB0CTL1 |= UCTR | UCTXSTT;     // send start bit, slave addr, write bit
     while(!(IFG2 & UCB0TXIFG));     // wait until tx buffer is empty
+
     UCB0TXBUF = data;               // send data
     while(!(IFG2 & UCB0TXIFG));     // wait until tx buffer is empty
+
     UCB0CTL1 |= UCTXSTP;            // send stop bit
     while(UCB0CTL1 & UCTXSTP);      // wait until stop bit is sent
 }
@@ -79,6 +81,28 @@ void I2CSend(uint8_t * data, uint8_t length)
         UCB0TXBUF = data[i];        // send data
     }
     while(!(IFG2 & UCB0TXIFG));     // wait until tx buffer is empty
+    UCB0CTL1 |= UCTXSTP;            // send stop bit
+    while(UCB0CTL1 & UCTXSTP);      // wait until stop bit is sent
+}
+
+void I2CSendRegister(uint8_t reg, uint8_t data)
+//-------------------------------------------------------------------------
+// Func:  Send a register and data byte over I2C. Note: this is blocking until
+//        the bus is free and the transaction is complete. Also sends MSB first
+// Args:  data - pointer to data byte array
+//        length - length of data in bytes
+// Retn:  None
+//-------------------------------------------------------------------------
+{
+    while(UCB0STAT & UCBBUSY);      // wait for bus to be free
+    UCB0CTL1 |= UCTR | UCTXSTT;     // send start bit, slave addr, write bit
+
+    UCB0TXBUF = reg;                // send address of register
+    while(!(UCB0TXIFG & IFG2));     // wait for buffer empty
+
+    UCB0TXBUF = data;               // send data
+    while(!(UCB0TXIFG & IFG2));     // wait for buffer empty
+
     UCB0CTL1 |= UCTXSTP;            // send stop bit
     while(UCB0CTL1 & UCTXSTP);      // wait until stop bit is sent
 }

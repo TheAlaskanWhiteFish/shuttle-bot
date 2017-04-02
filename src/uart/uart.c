@@ -11,7 +11,7 @@
 
  #include "stdint.h"
  #include "uart.h"
- #include "msp430x22x4.h"
+ #include "../msp430x22x4.h"
 
 void UARTInit(void)
 //-------------------------------------------------------------------------

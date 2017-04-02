@@ -21,11 +21,15 @@ void I2CInitMaster(void)
 // Retn:  None
 //-------------------------------------------------------------------------
 {
+    // note: cc2500 is connected to USCB0 on ez430 card, needs to be disabled
+    P3DIR |= 0x0F;                          // P3.0-3 as outputs
+    P3OUT |= 0x09;                          // disable cc2500
+    P3SEL |= 0x06;                          // P3.1 and P3.2 as I2C
     UCB0CTL1 = UCSWRST;                     // stop/reset USCB0
     UCB0CTL0 = UCMODE_3 | UCMST | UCSYNC;   // I2C mode, master, synchronous
     UCB0CTL1 = UCSSEL_2;                    // SMCLK source
     UCB0BR1 = 0;                            // msb of divisor
-    UCB0BR0 = 12;                           // lsb of divisor, SMCLK/12 = ~100kHz
+    UCB0BR0 = 10;                           // lsb of divisor, SMCLK/10 = ~100kHz
     UCB0CTL1 &= ~UCSWRST;                   // start USCB0
 }
 

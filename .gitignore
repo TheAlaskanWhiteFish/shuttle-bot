@@ -7,3 +7,7 @@ path.txt
 *.dep
 *.ewd
 *.ewt
+
+# Other Files #
+###############
+.gcc-flags.json

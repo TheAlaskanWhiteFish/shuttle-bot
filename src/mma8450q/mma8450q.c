@@ -13,16 +13,13 @@
  #include "../msp430x22x4.h"
  #include "stdint.h"
 
- UCB0I2CSA = addr;				  // Slave Dev addr w/ SA0=0
- 
- while (UCB0STST & UCBBUSY){};    // Carrier Sense
- UCB0CTL1 |= UCTXSTT + UCTR;      // Tx (ST, Dev addr) + w-bit
- 
- UCB0TXBUF = 0x38;               // Tx reg addr of CTRL_REG1
- while (!(UCB0TXIFG & IFG2)){};   // Wait for Tx_Buf empty
-
- UCB0TXBUF = 0x0D;                // Tx Data to CTRL_REG1
- while (!(UCB0TXIFG & IFG2)){};   // Wait for Tx_Buf empty
-
- UCB0CTL1 |= UCTXSTP;             // Tx Sp after curr byte
- while (UCB0CTL1 & UCTXSTP){};     // Wait for SP to be sent
+void MMA8450Init(void)
+//-------------------------------------------------------------------------
+// Func:  Start I2C and initialize the accelerometer
+// Args:  none
+// Retn:  none
+//-------------------------------------------------------------------------
+{
+    I2CInitMaster();                    // initialize I2C in master mode
+    I2CSendRegister(CTRL_REG1, 0x0D);   // set active mode, +/-2g, 50Hz sample
+}

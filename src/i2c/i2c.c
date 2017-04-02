@@ -89,8 +89,8 @@ void I2CSendRegister(uint8_t reg, uint8_t data)
 //-------------------------------------------------------------------------
 // Func:  Send a register and data byte over I2C. Note: this is blocking until
 //        the bus is free and the transaction is complete. Also sends MSB first
-// Args:  data - pointer to data byte array
-//        length - length of data in bytes
+// Args:  reg - the device register to modify
+//        data - the value to set the register to
 // Retn:  None
 //-------------------------------------------------------------------------
 {

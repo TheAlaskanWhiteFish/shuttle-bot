@@ -75,4 +75,8 @@
 #define OFF_Y       0x3E
 #define OFF_Z       0x3F
 
+
+// function prototypes
+void MMA8450Init(void)
+
 #endif

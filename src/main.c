@@ -37,6 +37,7 @@ void main(void)
     BCSCTL3 |= LFXT1S_2;        // ACLK run by VLO
 
     UARTInit();     // initialize uart
+    MMA8450Init();  // initialize accelerometer
     TACCR0 = 0x5DC0;
     TACTL = TASSEL_1 | ID_0 | MC_1 | TAIE;
 

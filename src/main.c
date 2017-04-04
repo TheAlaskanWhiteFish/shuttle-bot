@@ -55,6 +55,7 @@ void main(void)
 
     UARTInit();     // initialize uart
     MMA8450Init();  // initialize accelerometer
+    MMA8450SetZero();
     TACCR0 = 0x5DC0;
     TACTL = TASSEL_1 | ID_0 | MC_1 | TAIE;
 

@@ -46,7 +46,7 @@ void TimerA1Interrupt(void)
     }
 }
 
-void newDist(int8_t accelmm, int8_t vInitmm, uint8_t tmsec, int16_t currDist)
+int16_t NewDist(int8_t accelmm, int8_t vInitmm, uint8_t tmsec, int16_t currDist)
 //-------------------------------------------------------------------------
 // Func:  Calculate total distance travelled given initial velocity and acceleration
 // Args:  accelmm - acceleration in mm/sec^2
@@ -58,7 +58,7 @@ void newDist(int8_t accelmm, int8_t vInitmm, uint8_t tmsec, int16_t currDist)
     int16_t dVel1k = accelmm * tmsec;            // change in velocity in mm/sec * 1000
     int16_t newVelmm = dVel1k / 1000 + vInitmm;  // new velocity after acceleration
     int16_t dDistmm1k = newVelmm * tmsec;        // change in distance in mm/sec * 1000
-    int16_t newDistmm = dDistmm1k/1000 + currDistmm;
+    int16_t newDistmm = dDistmm1k / 1000 + currDistmm;
     return(newDistmm);
 }
 

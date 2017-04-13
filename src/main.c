@@ -16,26 +16,10 @@
 #pragma type_attribute=__interrupt
 void TimerA1Interrupt(void)
 {
-    static uint8_t cmdIndex = 0;
-    uint8_t drvCmds[4][2] = {
-        {0x60, 0xE0},           // drive forward, half speed
-        {0x40, 0xC0},           // coast to stop
-        {0x60, 0xA0},           // spin in place
-        {0x00, 0x00}            // stop
-    };
-
     switch(__even_in_range(TAIV, 10))
     {
         case TAIV_TAIFG:
-            if(cmdIndex < 4)            // only send 4 commands
-            {
-                uint8_t i = 0;
-                for(i = 0; i < 2; i++)
-                {
-                    UARTSendByte(drvCmds[cmdIndex][i]);
-                }
-                cmdIndex++;
-            }
+            __bic_SR_register_on_exit(CPUOFF);
             break;
         case TAIV_TACCR1:
             break;
@@ -46,7 +30,7 @@ void TimerA1Interrupt(void)
     }
 }
 
-int16_t NewDist(int8_t accelmm, int8_t vInitmm, uint8_t tmsec, int16_t currDist)
+int16_t NewDist(int8_t accelmm, int8_t vInitmm, uint8_t tmsec, int16_t currDistmm)
 //-------------------------------------------------------------------------
 // Func:  Calculate total distance travelled given initial velocity and acceleration
 // Args:  accelmm - acceleration in mm/sec^2
@@ -55,6 +39,7 @@ int16_t NewDist(int8_t accelmm, int8_t vInitmm, uint8_t tmsec, int16_t currDist)
 //        currDistmm - current distance travelled in milimeters
 // Retn:  newDistmm - new distance in mm
 //-------------------------------------------------------------------------
+{
     int16_t dVel1k = accelmm * tmsec;            // change in velocity in mm/sec * 1000
     int16_t newVelmm = dVel1k / 1000 + vInitmm;  // new velocity after acceleration
     int16_t dDistmm1k = newVelmm * tmsec;        // change in distance in mm/sec * 1000
@@ -68,12 +53,21 @@ void main(void)
     DCOCTL = CALDCO_1MHZ;       // 1MHz DCO
     BCSCTL1 = CALBC1_1MHZ;
     BCSCTL3 |= LFXT1S_2;        // ACLK run by VLO
+    P1DIR |= 0x03;
+    P1OUT &= ~0x03;
 
-    UARTInit();     // initialize uart
-    MMA8450Init();  // initialize accelerometer
-    MMA8450SetZero();
-    TACCR0 = 0x5DC0;
+    UARTInit();         // initialize uart
+    MMA8450Init();      // initialize accelerometer
+    MMA8450SetZero();   // zero out accelerometer, dont move robot while happening
+    TACCR0 = 6000;
     TACTL = TASSEL_1 | ID_0 | MC_1 | TAIE;
 
-    __bis_SR_register(LPM0_bits | GIE);
+
+    int16_t accelData[3];
+    while(1)
+    {
+        P1OUT ^= 0x02;
+        //MMA8450ReadXYZ(accelData);
+        __bis_SR_register(CPUOFF | GIE);
+    }
 }

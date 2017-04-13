@@ -31,6 +31,7 @@ void I2CInitMaster(void)
     UCB0BR1 = 0;                            // msb of divisor
     UCB0BR0 = 10;                           // lsb of divisor, SMCLK/10 = ~100kHz
     UCB0CTL1 &= ~UCSWRST;                   // start USCB0
+    while(UCB0STAT & UCBBUSY);              // Check if Bus Busy (carrier sense)
 }
 
 void I2CSetSlaveAddr(uint16_t addr)
@@ -40,7 +41,9 @@ void I2CSetSlaveAddr(uint16_t addr)
 // Retn:  None
 //-------------------------------------------------------------------------
 {
-    UCB0I2CSA = addr;   // set slave address
+    UCB0CTL1 |= UCSWRST;    // stop i2c
+    UCB0I2CSA = addr;       // set slave address
+    UCB0CTL1 &= ~UCSWRST;   // start i2c
 }
 
 void I2CSendByte(uint8_t data)
@@ -95,7 +98,7 @@ void I2CSendRegister(uint8_t reg, uint8_t data)
 //-------------------------------------------------------------------------
 {
     while(UCB0STAT & UCBBUSY);      // wait for bus to be free
-    UCB0CTL1 |= UCTR | UCTXSTT;     // send start bit, slave addr, write bit
+    UCB0CTL1 |= UCTXSTT + UCTR;     // send start bit, slave addr, write bit
 
     UCB0TXBUF = reg;                // send address of register
     while(!(UCB0TXIFG & IFG2));     // wait for buffer empty

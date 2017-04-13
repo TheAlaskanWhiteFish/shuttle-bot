@@ -21,10 +21,12 @@ void MMA8450Init(void)
 // Retn:  none
 //-------------------------------------------------------------------------
 {
+    volatile uint16_t i;                // generic counter for delay
+    for(i = 0; i < 40000; i++);         // wait for power to stabilize
     I2CInitMaster();                    // initialize I2C in master mode
     I2CSetSlaveAddr(0x1C);              // set slave address for accel
-    I2CSendRegister(CTRL_REG1,          // set active mode, +/-2g, 50Hz sample
-                   (FS_2G | DATA_RATE_50);
+    I2CSendRegister(CTRL_REG1,          // set active mode, +/-2g, 200Hz sample
+                   (FS_2G | DATA_RATE_200));
 }
 
 void MMA8450ReadXYZ(int16_t * retData)
@@ -64,7 +66,7 @@ void MMA8450SetZero()
         I2CSendRegister(CTRL_REG1,      // change to 8g, 1.56 sample rate
                        (FS_8G | DATA_RATE_1_56));
 
-        for(j = 0; j < 166667; i++);    // empty looop to delay for about 2s
+        for(j = 0; j < 166667; j++);    // empty looop to delay for about 2s
 
         MMA8450ReadXYZ(accelData);      // get readings
         for(j = 0; j < 3; j++)          // calculate calibration values for
@@ -84,6 +86,6 @@ void MMA8450SetZero()
         I2CSendRegister(OFF_Z, zCal);
     }
 
-    I2CSendRegister(CTRL_REG1,          // set active mode, +/-2g, 50Hz sample
-                   (FS_2G | DATA_RATE_50);
+    I2CSendRegister(CTRL_REG1,          // set active mode, +/-2g, 200Hz sample
+                   (FS_2G | DATA_RATE_200));
 }

@@ -121,20 +121,20 @@ DataUnion_t I2CReadRegisters(uint8_t firstAddr, uint8_t numRegs)
     DataUnion_t inBuff;     // create input buffer
     uint8_t i;              // loop counter
 
-    while(UCB0STAT * UCBBUSY);  // wait until bus is free
+    while(UCB0STAT & UCBBUSY);  // wait until bus is free
     UCB0CTL1 |= UCTR | UCTXSTT; // send start, address, write bit
     UCB0TXBUF = firstAddr;      // send first register to read from
     while(!(UCB0TXIFG & IFG2)); // wait for buffer empty
 
-    UCB0CTL0 &= ~UCTR;          // read mode
+    UCB0CTL1 &= ~UCTR;          // read mode
     UCB0CTL1 |= UCTXSTT;        // send start, address, read bit
 
-    for(i = 0; i <= numRegs - 1; i++)
+    for(i = 0; i <= (numRegs - 1); i++)
     {
         while(!(IFG2 & UCB0RXIFG)); // wait for byte to be read
         inBuff.s8[i] = UCB0RXBUF;   // store byte
 
-        if(i = numRegs - 2)                 // if final byte enroute
+        if(i == numRegs - 2)                 // if final byte enroute
         {
             UCB0CTL1 |= UCTXNACK | UCTXSTP; // send NACK and stop
         }

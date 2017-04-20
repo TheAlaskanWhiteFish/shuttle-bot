@@ -66,8 +66,28 @@ void main(void)
     int16_t accelData[3];
     while(1)
     {
-        P1OUT ^= 0x02;
-        //MMA8450ReadXYZ(accelData);
+        P1OUT |= 0x02;
+        MMA8450ReadXYZ(accelData);
+
+        uint8_t charMap[] = "0123456789ABCDEF";
+
+        UARTSend("\fX: 0x", 6);
+        UARTSendByte(charMap[(accelData[0] & 0x0F00) >> 8]);
+        UARTSendByte(charMap[(accelData[0] & 0x00F0) >> 4]);
+        UARTSendByte(charMap[accelData[0] & 0x000F]);
+
+        UARTSend("\r\nY: 0x", 7);
+        UARTSendByte(charMap[(accelData[1] & 0x0F00) >> 8]);
+        UARTSendByte(charMap[(accelData[1] & 0x00F0) >> 4]);
+        UARTSendByte(charMap[accelData[1] & 0x000F]);
+
+        UARTSend("\r\nZ: 0x", 7);
+        UARTSendByte(charMap[(accelData[2] & 0x0F00) >> 8]);
+        UARTSendByte(charMap[(accelData[2] & 0x00F0) >> 4]);
+        UARTSendByte(charMap[accelData[2] & 0x000F]);
+
+
+        P1OUT &= ~0x02;
         __bis_SR_register(CPUOFF | GIE);
     }
 }

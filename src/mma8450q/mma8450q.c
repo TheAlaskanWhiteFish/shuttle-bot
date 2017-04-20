@@ -29,22 +29,26 @@ void MMA8450Init(void)
                    (FS_2G | DATA_RATE_200));
 }
 
-void MMA8450ReadXYZ(int16_t * retData)
+uint8_t MMA8450ReadXYZ(int16_t * retData)
 //-------------------------------------------------------------------------
 // Func:  Read the X, Y, and Z registers from the accelerometer
 // Args:  a pointer to a 3 byte array for storing the values
-// Retn:  none
+// Retn:  the status register
 //-------------------------------------------------------------------------
 {
-    DataUnion_t data = I2CReadRegisters(OUT_X_LSB, 6);  // read X,Y,Z
+    int16_t data[7];
+    I2CReadRegisters(OUT_X_LSB, 7, data);  // read X,Y,Z
     uint8_t i;                                          // loop counter
 
     // convert the received data into a valid 12 bit value
     // left shift the LSBs and then right shift the whole thing
     for(i = 0; i < 3; i++)
     {
-        retData[i] = (data.s8[i*2+1] | data.s8[i*2] << 4) >> 4;
+        retData[i] = (((data[i*2+1] & 0xFF) << 4) | (data[i*2] & 0x0F)) & 0x0FFF;
+        //retData[i] = (data[i*2+1] | data[i*2] << 4) >> 4;
     }
+
+    return data[6];
 }
 
 void MMA8450SetZero()

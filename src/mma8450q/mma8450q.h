@@ -106,7 +106,7 @@
 
 // function prototypes
 void MMA8450Init(void);
-void MMA8450ReadXYZ(int16_t * retData);
+uint8_t MMA8450ReadXYZ(int16_t * retData);
 void MMA8450SetZero();
 
 #endif

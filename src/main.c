@@ -10,6 +10,7 @@
 #include "msp430x22x4.h"
 #include "uart/uart.h"
 #include "mma8450q/mma8450q.h"
+#include "i2c/i2c.h"
 #include "stdint.h"
 
 #pragma vector=TIMERA1_VECTOR
@@ -57,8 +58,11 @@ void main(void)
     P1OUT &= ~0x03;
 
     UARTInit();         // initialize uart
+    P1OUT |= 0x01;      // turn on red led while setting up accelerometer
     MMA8450Init();      // initialize accelerometer
     MMA8450SetZero();   // zero out accelerometer, dont move robot while happening
+    P1OUT &= ~0x01;     // turn off led after finished
+
     TACCR0 = 6000;
     TACTL = TASSEL_1 | ID_0 | MC_1 | TAIE;
 
@@ -68,6 +72,7 @@ void main(void)
     {
         P1OUT |= 0x02;
         MMA8450ReadXYZ(accelData);
+        uint8_t whoAmI = I2CReadRegister(WHO_AM_I);
 
         uint8_t charMap[] = "0123456789ABCDEF";
 
@@ -85,6 +90,10 @@ void main(void)
         UARTSendByte(charMap[(accelData[2] & 0x0F00) >> 8]);
         UARTSendByte(charMap[(accelData[2] & 0x00F0) >> 4]);
         UARTSendByte(charMap[accelData[2] & 0x000F]);
+
+        UARTSend("\r\nwho: ", 7);
+        UARTSendByte(charMap[(whoAmI & 0xF0) >> 4]);
+        UARTSendByte(charMap[whoAmI & 0x0F]);
 
 
         P1OUT &= ~0x02;

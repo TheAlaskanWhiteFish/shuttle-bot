@@ -77,6 +77,24 @@
 #define OFF_Z       0x3F
 
 
+// STATUS register bit definitions
+#define ZYXOW   0x80
+#define ZOW     0x40
+#define YOW     0x20
+#define XOW     0x10
+#define ZYXDR   0x08
+#define ZDR     0x04
+#define YDR     0x02
+#define XDR     0x01
+
+
+// XYZ_DATA_CFG bit definitions
+#define FDE     0x80
+#define ZDEFE   0x04
+#define YDEFE   0x02
+#define XDEFE   0x01
+
+
 // CTRL_REG1 bit definitions
 #define ASLP_RATE1_BIT  0x80
 #define ASLP_RATE0_BIT  0x40
@@ -102,6 +120,7 @@
 #define FS_2G           FS0_BIT
 #define FS_4G           FS1_BIT
 #define FS_8G           (FS1_BIT | FS0_BIT)
+
 
 
 // function prototypes

@@ -37,8 +37,8 @@ uint8_t MMA8450ReadXYZ(int16_t * retData)
 //-------------------------------------------------------------------------
 {
     int16_t data[7];
-    I2CReadRegisters(OUT_X_LSB, 7, data);  // read X,Y,Z
-    uint8_t i;                                          // loop counter
+    I2CReadMultRegisters(OUT_X_LSB, 7, data);  // read X,Y,Z
+    uint8_t i;                                 // loop counter
 
     // convert the received data into a valid 12 bit value
     // left shift the LSBs and then right shift the whole thing
@@ -65,6 +65,8 @@ void MMA8450SetZero()
     int16_t accelData[3];       // array with accel value
     int16_t xCal, yCal, zCal;   // calibration values
 
+    uint8_t ctrlReg1 = I2CReadRegister(CTRL_REG1);      // get current mode
+
     for(i = 0; i < 2; i++)      // run twice for better accuracy
     {
         I2CSendRegister(CTRL_REG1,      // change to 8g, 1.56 sample rate
@@ -90,6 +92,5 @@ void MMA8450SetZero()
         I2CSendRegister(OFF_Z, zCal);
     }
 
-    I2CSendRegister(CTRL_REG1,          // set active mode, +/-2g, 200Hz sample
-                   (FS_2G | DATA_RATE_200));
+    I2CSendRegister(CTRL_REG1, ctrlReg1);    // return to previous operating mode
 }

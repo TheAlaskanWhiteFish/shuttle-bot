@@ -110,15 +110,38 @@ void I2CSendRegister(uint8_t reg, uint8_t data)
     while(UCB0CTL1 & UCTXSTP);      // wait until stop bit is sent
 }
 
-void I2CReadRegisters(uint8_t firstAddr, uint8_t numRegs, int16_t * retData)
+uint8_t I2CReadRegister(uint8_t addr)
+//-------------------------------------------------------------------------
+// Func:  Read a single register
+// Args:  addr - the register address to read
+// Retn:  the data contained in the requested register
+//-------------------------------------------------------------------------
+{
+    while(UCB0STAT & UCBBUSY);  // wait until bus is free
+    UCB0CTL1 |= UCTR | UCTXSTT; // send start, address, write bit
+    UCB0TXBUF = addr;           // send first register to read from
+    while(!(UCB0TXIFG & IFG2)); // wait for buffer empty
+
+    UCB0CTL1 &= ~UCTR;              // read mode
+    UCB0CTL1 |= UCTXSTT;            // send start, address, read bit
+    while(UCB0CTL1 & UCTXSTT);      // wait for start to be sent
+    UCB0CTL1 |= UCTXNACK | UCTXSTP; // send NACK and stop
+    while(!(IFG2 & UCB0RXIFG));     // wait for byte to be read
+    uint8_t data = UCB0RXBUF;       // get data
+
+    return data;
+}
+
+void I2CReadMultRegisters(uint8_t firstAddr, uint8_t numRegs, int16_t * retData)
 //-------------------------------------------------------------------------
 // Func:  Read a specified number of registers starting from firstAddr
 // Args:  firstAddr - the addredd of the first register to read
 //        numRegs - the number of registers to read
-// Retn:  a union containing the data read back from the device
+//        retData - a pointer to an array to store the read values
+// Retn:  none
 //-------------------------------------------------------------------------
 {
-    uint8_t i;              // loop counter
+    uint8_t i;                  // loop counter
 
     while(UCB0STAT & UCBBUSY);  // wait until bus is free
     UCB0CTL1 |= UCTR | UCTXSTT; // send start, address, write bit
@@ -131,7 +154,7 @@ void I2CReadRegisters(uint8_t firstAddr, uint8_t numRegs, int16_t * retData)
     for(i = 0; i <= (numRegs - 1); i++)
     {
         while(!(IFG2 & UCB0RXIFG)); // wait for byte to be read
-        retData[i] = UCB0RXBUF;   // store byte
+        retData[i] = UCB0RXBUF;     // store byte
 
         if(i == numRegs - 2)                 // if final byte enroute
         {

@@ -13,13 +13,40 @@
 #include "i2c/i2c.h"
 #include "stdint.h"
 
+const uint16_t forward[] = {96, 234};      // preset motor commands
+const uint16_t stop[] = {0, 0};
+const uint16_t reverse[] = {32, 160};
+
 #pragma vector=TIMERA1_VECTOR
 #pragma type_attribute=__interrupt
 void TimerA1Interrupt(void)
 {
+  int32_t data[3];
+  volatile int8_t xaccel;
+  int16_t vel = 0;
+  int16_t dist = 0;
+  int8_t t = 100;
+  int8_t step = 0;
     switch(__even_in_range(TAIV, 10))
     {
         case TAIV_TAIFG:
+            MMA8450ReadXYZ(int16_t *data);      // Read accelerometer
+            xaccel = data[0] * 10;              // Convert x to mm/s^2 and store
+            vel = NewVel(accel, vel, t);        // Find velocity and distance
+            dist = NewDist(vel, t, dist);
+            
+            if(dist > 1000 && step == 0)        // Stop at 1 meter
+            {
+              UARTSend(*stop, 2);
+              step = 1;
+              for (i = 0; i < 12000; i++){};    // Wait 1 sec before reversing
+              UARTSend(*reverse, 2);
+            }
+            else if(dist < 0 && step == 1)      // Stop at starting line
+            {
+              UARTSend(*stop, 2);
+            }
+            
             __bic_SR_register_on_exit(CPUOFF);
             break;
         case TAIV_TACCR1:
@@ -31,19 +58,30 @@ void TimerA1Interrupt(void)
     }
 }
 
-int16_t NewDist(int8_t accelmm, int8_t vInitmm, uint8_t tmsec, int16_t currDistmm)
+int16_t NewVel(int16_t accelmm, int16_t vInitmm, uint8_t tmsec)
 //-------------------------------------------------------------------------
-// Func:  Calculate total distance travelled given initial velocity and acceleration
+// Func:  Calculate total distance travelled given initial velocity
 // Args:  accelmm - acceleration in mm/sec^2
-//        vInitmm - initial velocity in mm/sec
+//        vInitmm - initial velocity in mm/sec (previously returned newVelmm)
 //        tmsec - time period in miliseconds
-//        currDistmm - current distance travelled in milimeters
-// Retn:  newDistmm - new distance in mm
+// Retn:  newVelmm - new velocity in mm/sec
 //-------------------------------------------------------------------------
 {
     int16_t dVel1k = accelmm * tmsec;            // change in velocity in mm/sec * 1000
     int16_t newVelmm = dVel1k / 1000 + vInitmm;  // new velocity after acceleration
-    int16_t dDistmm1k = newVelmm * tmsec;        // change in distance in mm/sec * 1000
+    return(newVelmm);
+}
+
+int16_t NewDist(int16_t velmm, int16_t currDistmm, uint8_t tmsec)
+//-------------------------------------------------------------------------
+// Func:  Calculate total distance travelled given velocity and time
+// Args:  velmm - velocity in mm/sec (previously returned newVelmm)
+//        currDistmm - current distance travelled in milimeters
+//        tmsec - time period in miliseconds
+// Retn:  newDistmm - new distance in mm
+//-------------------------------------------------------------------------
+{
+    int16_t dDistmm1k = velmm * tmsec;        // change in distance in mm/sec * 1000
     int16_t newDistmm = dDistmm1k / 1000 + currDistmm;
     return(newDistmm);
 }
@@ -63,8 +101,8 @@ void main(void)
     MMA8450SetZero();   // zero out accelerometer, dont move robot while happening
     P1OUT &= ~0x01;     // turn off led after finished
 
-    TACCR0 = 6000;
-    TACTL = TASSEL_1 | ID_0 | MC_1 | TAIE;
+    TACCR0 = 1200;
+    TACTL = TASSEL_1 | ID_0 | MC_1 | TAIE; // ACLK, div 1, Up mode
 
 
     int16_t accelData[3];

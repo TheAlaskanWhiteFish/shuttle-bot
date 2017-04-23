@@ -45,7 +45,7 @@ int16_t NewVel(int16_t accel, int16_t vInit, uint8_t tmsec)
 //-------------------------------------------------------------------------
 {
     int16_t dVel     = (accel * tmsec) / 100;  // change in velocity in units/dsec
-    int16_t newVelmm = dVel + vInit;           // new velocity after acceleration
+    int16_t newVel = dVel + vInit;           // new velocity after acceleration
     return(newVel);
 }
 
@@ -84,40 +84,42 @@ void main(void)
     int16_t accelData[3];
     while(1)
     {
+        int16_t data[3];            // array for storing acceleration data
+        int16_t xAccel;             // x component of acceleration
+        static int16_t vel = 0;     // current velocity
+        static int16_t dist = 0;    // distance travelled
+        int8_t t = 20;             // time step between updates
+        static int8_t step = 0;     // flag for what action is happening
+        static uint8_t i = 0;       // sample counter
+
         P1OUT |= 0x02;
-
-        int16_t data[3];
-        int16_t xaccel;
-        static int16_t vel = 0;
-        static int16_t dist = 0;
-        int8_t t = 100;
-        static int8_t step = 0;
-
-        uint8_t i;
-        for(i = 0; i < 4; i++)
-        {
-            MMA8450ReadXYZ(data);   // read accelerometer
-            // convert to 16 bit signed and sum samples
-            xaccel += (data[0] > 0x07FF) ? (data[0] - 4096) : data[0];
-        }
-        xaccel >>= 2;                       // divide by 4 to get average
-        //xaccel = data[0] * 10;              // Convert x to mm/s^2 and store
-        vel = NewVel(xaccel, vel, t);       // Find velocity and distance
-        dist = NewDist(vel, dist, t);
-
-        if(dist > 1000 && step == 0)        // Stop at 1 meter
-        {
-          UARTSend(stop, 2);
-          step = 1;
-          for (i = 0; i < 12000; i++){};    // Wait 1 sec before reversing
-          UARTSend(reverse, 2);
-        }
-        else if(dist < 0 && step == 1)      // Stop at starting line
-        {
-          UARTSend(stop, 2);
-        }
-
+        MMA8450ReadXYZ(data);   // read accelerometer
+        // convert to 16 bit signed and sum samples
+        xAccel += (data[0] > 0x07FF) ? (data[0] - 4096) : data[0];
         P1OUT &= ~0x02;
+        i += 1;                 // increment sample counter
+
+        if(i == 4)
+        {
+            i = 0;                              // reset sample counter
+            xAccel >>= 2;                       // divide by 4 to get average
+            //xaccel = data[0] * 10;              // Convert x to mm/s^2 and store
+            vel = NewVel(xAccel, vel, t);       // Find velocity and distance
+            dist = NewDist(vel, dist, t);
+
+            if(dist > 1000 && step == 0)        // Stop at 12 meters
+            {
+              UARTSend(stop, 2);
+              step = 1;
+              for (i = 0; i < 1000000; i++){};    // Wait 1 sec before reversing
+              UARTSend(reverse, 2);
+            }
+            else if(dist < 0 && step == 1)      // Stop at starting line
+            {
+              UARTSend(stop, 2);
+            }
+        }
+
         __bis_SR_register(CPUOFF | GIE);
     }
 }

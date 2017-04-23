@@ -35,32 +35,32 @@ void TimerA1Interrupt(void)
     }
 }
 
-int16_t NewVel(int16_t accelmm, int16_t vInitmm, uint8_t tmsec)
+int16_t NewVel(int16_t accel, int16_t vInit, uint8_t tmsec)
 //-------------------------------------------------------------------------
 // Func:  Calculate total distance travelled given initial velocity
-// Args:  accelmm - acceleration in mm/sec^2
-//        vInitmm - initial velocity in mm/sec (previously returned newVelmm)
-//        tmsec - time period in miliseconds
-// Retn:  newVelmm - new velocity in mm/sec
+// Args:  accel  - acceleration from accelerometer
+//        vInit  - initial velocity in units/msec (previously returned newVel)
+//        tmsec  - time period in miliseconds
+// Retn:  newVel - new velocity in units/dsec
 //-------------------------------------------------------------------------
 {
-    int16_t dVel1k = accelmm * tmsec;            // change in velocity in mm/sec * 1000
-    int16_t newVelmm = dVel1k / 1000 + vInitmm;  // new velocity after acceleration
-    return(newVelmm);
+    int16_t dVel     = (accel * tmsec) / 100;  // change in velocity in units/dsec
+    int16_t newVelmm = dVel + vInit;           // new velocity after acceleration
+    return(newVel);
 }
 
-int16_t NewDist(int16_t velmm, int16_t currDistmm, uint8_t tmsec)
+int16_t NewDist(int16_t vel, int16_t currDist, uint8_t tmsec)
 //-------------------------------------------------------------------------
 // Func:  Calculate total distance travelled given velocity and time
-// Args:  velmm - velocity in mm/sec (previously returned newVelmm)
-//        currDistmm - current distance travelled in milimeters
-//        tmsec - time period in miliseconds
-// Retn:  newDistmm - new distance in mm
+// Args:  vel      - velocity in units/msec (previously returned newVel)
+//        currDist - current distance travelled in units
+//        tmsec    - time period in miliseconds
+// Retn:  newDist  - new distance in units
 //-------------------------------------------------------------------------
 {
-    int16_t dDistmm1k = velmm * tmsec;        // change in distance in mm/sec * 1000
-    int16_t newDistmm = dDistmm1k / 1000 + currDistmm;
-    return(newDistmm);
+    int16_t dDist = (vel * tmsec) / 100;     // change in distance
+    int16_t newDist = dDist + currDist;      // new distance
+    return(newDist);
 }
 
 void main(void)
@@ -96,7 +96,6 @@ void main(void)
 
         MMA8450ReadXYZ(data);               // Read accelerometer
         xaccel = (data > 0x07FF) ? (data - 4096) : data;    // convert to 16 bit signed
-        xaccel = data[0] * 10;              // Convert x to mm/s^2 and store
         vel = NewVel(accel, vel, t);        // Find velocity and distance
         dist = NewDist(vel, t, dist);
 

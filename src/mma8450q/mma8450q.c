@@ -41,14 +41,13 @@ uint8_t MMA8450ReadXYZ(int16_t * retData)
     uint8_t i;                                 // loop counter
 
     // convert the received data into a valid 12 bit value
-    // left shift the LSBs and then right shift the whole thing
+    // left shift the MSB and or it with the LSB
     for(i = 0; i < 3; i++)
     {
         retData[i] = (((data[i*2+1] & 0xFF) << 4) | (data[i*2] & 0x0F)) & 0x0FFF;
-        //retData[i] = (data[i*2+1] | data[i*2] << 4) >> 4;
     }
 
-    return data[6];
+    return data[6]; // return the status register
 }
 
 void MMA8450SetZero()

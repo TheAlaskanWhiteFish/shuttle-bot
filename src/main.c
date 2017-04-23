@@ -13,40 +13,17 @@
 #include "i2c/i2c.h"
 #include "stdint.h"
 
-const uint16_t forward[] = {96, 234};      // preset motor commands
-const uint16_t stop[] = {0, 0};
-const uint16_t reverse[] = {32, 160};
+const uint8_t forward[] = {96, 234};      // preset motor commands
+const uint8_t stop[] = {0, 0};
+const uint8_t reverse[] = {32, 160};
 
 #pragma vector=TIMERA1_VECTOR
 #pragma type_attribute=__interrupt
 void TimerA1Interrupt(void)
 {
-  int32_t data[3];
-  volatile int8_t xaccel;
-  int16_t vel = 0;
-  int16_t dist = 0;
-  int8_t t = 100;
-  int8_t step = 0;
     switch(__even_in_range(TAIV, 10))
     {
         case TAIV_TAIFG:
-            MMA8450ReadXYZ(int16_t *data);      // Read accelerometer
-            xaccel = data[0] * 10;              // Convert x to mm/s^2 and store
-            vel = NewVel(accel, vel, t);        // Find velocity and distance
-            dist = NewDist(vel, t, dist);
-            
-            if(dist > 1000 && step == 0)        // Stop at 1 meter
-            {
-              UARTSend(*stop, 2);
-              step = 1;
-              for (i = 0; i < 12000; i++){};    // Wait 1 sec before reversing
-              UARTSend(*reverse, 2);
-            }
-            else if(dist < 0 && step == 1)      // Stop at starting line
-            {
-              UARTSend(*stop, 2);
-            }
-            
             __bic_SR_register_on_exit(CPUOFF);
             break;
         case TAIV_TACCR1:
@@ -109,30 +86,31 @@ void main(void)
     while(1)
     {
         P1OUT |= 0x02;
-        MMA8450ReadXYZ(accelData);
-        uint8_t whoAmI = I2CReadRegister(WHO_AM_I);
 
-        uint8_t charMap[] = "0123456789ABCDEF";
+        int16_t data[3];
+        int16_t xaccel;
+        int16_t vel = 0;
+        int16_t dist = 0;
+        int8_t t = 100;
+        static int8_t step = 0;
 
-        UARTSend("\fX: 0x", 6);
-        UARTSendByte(charMap[(accelData[0] & 0x0F00) >> 8]);
-        UARTSendByte(charMap[(accelData[0] & 0x00F0) >> 4]);
-        UARTSendByte(charMap[accelData[0] & 0x000F]);
+        MMA8450ReadXYZ(data);               // Read accelerometer
+        xaccel = (data > 0x07FF) ? (data - 4096) : data;    // convert to 16 bit signed
+        xaccel = data[0] * 10;              // Convert x to mm/s^2 and store
+        vel = NewVel(accel, vel, t);        // Find velocity and distance
+        dist = NewDist(vel, t, dist);
 
-        UARTSend("\r\nY: 0x", 7);
-        UARTSendByte(charMap[(accelData[1] & 0x0F00) >> 8]);
-        UARTSendByte(charMap[(accelData[1] & 0x00F0) >> 4]);
-        UARTSendByte(charMap[accelData[1] & 0x000F]);
-
-        UARTSend("\r\nZ: 0x", 7);
-        UARTSendByte(charMap[(accelData[2] & 0x0F00) >> 8]);
-        UARTSendByte(charMap[(accelData[2] & 0x00F0) >> 4]);
-        UARTSendByte(charMap[accelData[2] & 0x000F]);
-
-        UARTSend("\r\nwho: ", 7);
-        UARTSendByte(charMap[(whoAmI & 0xF0) >> 4]);
-        UARTSendByte(charMap[whoAmI & 0x0F]);
-
+        if(dist > 1000 && step == 0)        // Stop at 1 meter
+        {
+          UARTSend(stop, 2);
+          step = 1;
+          for (i = 0; i < 12000; i++){};    // Wait 1 sec before reversing
+          UARTSend(reverse, 2);
+        }
+        else if(dist < 0 && step == 1)      // Stop at starting line
+        {
+          UARTSend(stop, 2);
+        }
 
         P1OUT &= ~0x02;
         __bis_SR_register(CPUOFF | GIE);

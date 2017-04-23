@@ -93,12 +93,6 @@ void main(void)
         int8_t t = 100;
         static int8_t step = 0;
 
-<<<<<<< HEAD
-        MMA8450ReadXYZ(data);               // Read accelerometer
-        xaccel = (data > 0x07FF) ? (data - 4096) : data;    // convert to 16 bit signed
-        vel = NewVel(accel, vel, t);        // Find velocity and distance
-        dist = NewDist(vel, t, dist);
-=======
         uint8_t i;
         for(i = 0; i < 4; i++)
         {
@@ -110,7 +104,6 @@ void main(void)
         //xaccel = data[0] * 10;              // Convert x to mm/s^2 and store
         vel = NewVel(xaccel, vel, t);       // Find velocity and distance
         dist = NewDist(vel, dist, t);
->>>>>>> origin/master
 
         if(dist > 1000 && step == 0)        // Stop at 1 meter
         {

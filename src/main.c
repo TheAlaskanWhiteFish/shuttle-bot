@@ -68,9 +68,8 @@ void main(void)
     WDTCTL = WDTPW | WDTHOLD;   // disable watchdog
     DCOCTL = CALDCO_1MHZ;       // 1MHz DCO
     BCSCTL1 = CALBC1_1MHZ;
-    BCSCTL3 |= LFXT1S_2;        // ACLK run by VLO
-    P1DIR |= 0x03;
-    P1OUT &= ~0x03;
+    P1DIR |= 0x03;              // set led outputs
+    P1OUT &= ~0x03;             // clear led outputs
 
     UARTInit();         // initialize uart
     P1OUT |= 0x01;      // turn on red led while setting up accelerometer
@@ -78,8 +77,8 @@ void main(void)
     MMA8450SetZero();   // zero out accelerometer, dont move robot while happening
     P1OUT &= ~0x01;     // turn off led after finished
 
-    TACCR0 = 1200;
-    TACTL = TASSEL_1 | ID_0 | MC_1 | TAIE; // ACLK, div 1, Up mode
+    TACCR0 = 5000;                          // 1 MHz / 5000 = 200Hz
+    TACTL = TASSEL_2 | ID_0 | MC_1 | TAIE;  // SMCLK, div 1, Up mode
 
 
     int16_t accelData[3];
@@ -89,15 +88,29 @@ void main(void)
 
         int16_t data[3];
         int16_t xaccel;
-        int16_t vel = 0;
-        int16_t dist = 0;
+        static int16_t vel = 0;
+        static int16_t dist = 0;
         int8_t t = 100;
         static int8_t step = 0;
 
+<<<<<<< HEAD
         MMA8450ReadXYZ(data);               // Read accelerometer
         xaccel = (data > 0x07FF) ? (data - 4096) : data;    // convert to 16 bit signed
         vel = NewVel(accel, vel, t);        // Find velocity and distance
         dist = NewDist(vel, t, dist);
+=======
+        uint8_t i;
+        for(i = 0; i < 4; i++)
+        {
+            MMA8450ReadXYZ(data);   // read accelerometer
+            // convert to 16 bit signed and sum samples
+            xaccel += (data[0] > 0x07FF) ? (data[0] - 4096) : data[0];
+        }
+        xaccel >>= 2;                       // divide by 4 to get average
+        //xaccel = data[0] * 10;              // Convert x to mm/s^2 and store
+        vel = NewVel(xaccel, vel, t);       // Find velocity and distance
+        dist = NewDist(vel, dist, t);
+>>>>>>> origin/master
 
         if(dist > 1000 && step == 0)        // Stop at 1 meter
         {

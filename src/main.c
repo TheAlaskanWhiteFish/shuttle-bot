@@ -35,7 +35,7 @@ void TimerA1Interrupt(void)
     }
 }
 
-int16_t NewVel(int16_t accel, int16_t vInit, uint8_t tmsec)
+int32_t NewVel(int16_t accel, int16_t vInit, uint8_t tmsec)
 //-------------------------------------------------------------------------
 // Func:  Calculate total distance travelled given initial velocity
 // Args:  accel  - acceleration from accelerometer
@@ -44,8 +44,8 @@ int16_t NewVel(int16_t accel, int16_t vInit, uint8_t tmsec)
 // Retn:  newVel - new velocity in units/dsec
 //-------------------------------------------------------------------------
 {
-    int16_t dVel     = (accel * tmsec) / 100;  // change in velocity in units/dsec
-    int16_t newVel = dVel + vInit;           // new velocity after acceleration
+    int32_t dVel = accel * tmsec;   // change in velocity in units/dsec
+    int32_t newVel = dVel + vInit;          // new velocity after acceleration
     return(newVel);
 }
 
@@ -58,8 +58,8 @@ int16_t NewDist(int16_t vel, int16_t currDist, uint8_t tmsec)
 // Retn:  newDist  - new distance in units
 //-------------------------------------------------------------------------
 {
-    int16_t dDist = (vel * tmsec) / 100;     // change in distance
-    int16_t newDist = dDist + currDist;      // new distance
+    int32_t dDist = vel * tmsec;     // change in distance
+    int32_t newDist = dDist + currDist;      // new distance
     return(newDist);
 }
 
@@ -72,6 +72,7 @@ void main(void)
     P1OUT &= ~0x03;             // clear led outputs
 
     UARTInit();         // initialize uart
+    UARTSend(stop, 2);  // send stop command to robot
     P1OUT |= 0x01;      // turn on red led while setting up accelerometer
     MMA8450Init();      // initialize accelerometer
     MMA8450SetZero();   // zero out accelerometer, dont move robot while happening
@@ -88,9 +89,15 @@ void main(void)
         int16_t xAccel;             // x component of acceleration
         static int16_t vel = 0;     // current velocity
         static int16_t dist = 0;    // distance travelled
-        int8_t t = 20;             // time step between updates
+        int8_t t = 20;              // time step between updates
         static int8_t step = 0;     // flag for what action is happening
         static uint8_t i = 0;       // sample counter
+
+        if(step == 0)
+        {
+            UARTSend(forward, 2);
+            step = 1;
+        }
 
         P1OUT |= 0x02;
         MMA8450ReadXYZ(data);   // read accelerometer
@@ -103,20 +110,20 @@ void main(void)
         {
             i = 0;                              // reset sample counter
             xAccel >>= 2;                       // divide by 4 to get average
-            //xaccel = data[0] * 10;              // Convert x to mm/s^2 and store
             vel = NewVel(xAccel, vel, t);       // Find velocity and distance
             dist = NewDist(vel, dist, t);
 
-            if(dist > 1000 && step == 0)        // Stop at 12 meters
+            if(dist >= 5000000 && step == 1)    // Stop at 12 meters
             {
               UARTSend(stop, 2);
-              step = 1;
-              for (i = 0; i < 1000000; i++){};    // Wait 1 sec before reversing
-              UARTSend(reverse, 2);
+              step = 2;
+              volatile uitn32_t j = 0;
+              for (j = 0; j < 71429; j++){};    // Wait 1 sec before reversing
+              UARTSend(reverse, 2);             // send reverse command
             }
-            else if(dist < 0 && step == 1)      // Stop at starting line
+            else if(dist <= 0 && step == 2)     // Stop at starting line
             {
-              UARTSend(stop, 2);
+              UARTSend(stop, 2);                // send stop command
             }
         }
 

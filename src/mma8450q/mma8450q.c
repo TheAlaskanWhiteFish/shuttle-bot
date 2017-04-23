@@ -21,8 +21,8 @@ void MMA8450Init(void)
 // Retn:  none
 //-------------------------------------------------------------------------
 {
-    volatile uint16_t i;                // generic counter for delay
-    for(i = 0; i < 60000; i++);         // wait for power to stabilize
+    volatile uint32_t i;                // generic counter for delay
+    for(i = 0; i < 215000; i++);        // wait for power to stabilize
     I2CInitMaster();                    // initialize I2C in master mode
     I2CSetSlaveAddr(0x1C);              // set slave address for accel
     I2CSendRegister(CTRL_REG1,          // set active mode, +/-2g, 200Hz sample

@@ -16,6 +16,8 @@
 uint8_t forward[] = {105, 234};      // preset motor commands
 uint8_t stop[] = {0, 0};
 uint8_t reverse[] = {23, 149};
+int32_t fwdDist = 77000000;
+int32_t revDist = -2500000;
 
 #pragma vector=TIMERA1_VECTOR
 #pragma type_attribute=__interrupt
@@ -34,7 +36,6 @@ void TimerA1Interrupt(void)
         default:
             break;
     }
-    volatile uint16_t flags = TAIV;     // read flags to clear them
 }
 
 int32_t NewVel(int32_t accel, int32_t vInit, uint8_t tmsec)
@@ -125,7 +126,7 @@ void main(void)
         else if(step == 1)    // Stop at 12 meters
         {
             dist = NewDist(vel, dist, timeStep);    // calculate distance
-            if(dist >= 78500000)
+            if(dist >= fwdDist)
             {
                 UARTSend(stop, 2);  // stop robot
                 P1OUT |= 0x01;
@@ -167,11 +168,11 @@ void main(void)
         else if(step == 3)     // Stop at starting line
         {
             dist = NewDist(vel, dist, timeStep);
-            if(dist <= -1500000)
+            if(dist <= revDist)
             {
                 UARTSend(stop, 2);  // send stop command
                 P1OUT |= 0x01;
-                while(1)            // done, loop 5ever and blinkleds
+                while(1)            // done, loop 5ever and blink leds
                 {
                   P1OUT ^= 0x03;
                   volatile uint32_t j = 0;

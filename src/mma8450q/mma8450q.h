@@ -88,6 +88,13 @@
 #define XDR     0x01
 
 
+// HP_FILTER_CUTOFF register bit definitions
+#define SEL_0   0x00
+#define SEL_1   0x01
+#define SEL_2   0x02
+#define SEL_3   0x03
+
+
 // XYZ_DATA_CFG bit definitions
 #define FDE     0x80
 #define ZDEFE   0x04
@@ -120,6 +127,17 @@
 #define FS_2G           FS0_BIT
 #define FS_4G           FS1_BIT
 #define FS_8G           (FS1_BIT | FS0_BIT)
+
+
+// CTRL_REG3 bit definitions
+#define FIFO_GATE   0x80
+#define WAKE_TRANS  0x40
+#define WAKE_LNDPRT 0x20
+#define WAKE_PULSE  0x10
+#define WAKE_FF_MT_1    0x08
+#define WAKE_FF_MT_2    0x04
+#define IPOL        0x02
+#define PP_OD       0x01
 
 
 

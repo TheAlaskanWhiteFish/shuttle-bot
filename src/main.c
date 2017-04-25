@@ -13,9 +13,9 @@
 #include "i2c/i2c.h"
 #include "stdint.h"
 
-const uint8_t forward[] = {96, 234};      // preset motor commands
-const uint8_t stop[] = {0, 0};
-const uint8_t reverse[] = {32, 160};
+uint8_t forward[] = {105, 234};      // preset motor commands
+uint8_t stop[] = {0, 0};
+uint8_t reverse[] = {23, 149};
 
 #pragma vector=TIMERA1_VECTOR
 #pragma type_attribute=__interrupt
@@ -24,6 +24,7 @@ void TimerA1Interrupt(void)
     switch(__even_in_range(TAIV, 10))
     {
         case TAIV_TAIFG:
+            // return to active mode
             __bic_SR_register_on_exit(CPUOFF);
             break;
         case TAIV_TACCR1:
@@ -33,9 +34,10 @@ void TimerA1Interrupt(void)
         default:
             break;
     }
+    volatile uint16_t flags = TAIV;     // read flags to clear them
 }
 
-int32_t NewVel(int16_t accel, int16_t vInit, uint8_t tmsec)
+int32_t NewVel(int32_t accel, int32_t vInit, uint8_t tmsec)
 //-------------------------------------------------------------------------
 // Func:  Calculate total distance travelled given initial velocity
 // Args:  accel  - acceleration from accelerometer
@@ -44,12 +46,12 @@ int32_t NewVel(int16_t accel, int16_t vInit, uint8_t tmsec)
 // Retn:  newVel - new velocity in units/dsec
 //-------------------------------------------------------------------------
 {
-    int32_t dVel = accel * tmsec;   // change in velocity in units/dsec
+    int32_t dVel = (accel * tmsec) / 10;    // change in velocity in units/dsec
     int32_t newVel = dVel + vInit;          // new velocity after acceleration
     return(newVel);
 }
 
-int16_t NewDist(int16_t vel, int16_t currDist, uint8_t tmsec)
+int32_t NewDist(int32_t vel, int32_t currDist, uint8_t tmsec)
 //-------------------------------------------------------------------------
 // Func:  Calculate total distance travelled given velocity and time
 // Args:  vel      - velocity in units/msec (previously returned newVel)
@@ -58,7 +60,7 @@ int16_t NewDist(int16_t vel, int16_t currDist, uint8_t tmsec)
 // Retn:  newDist  - new distance in units
 //-------------------------------------------------------------------------
 {
-    int32_t dDist = vel * tmsec;     // change in distance
+    int32_t dDist = (vel * tmsec) / 10;      // change in distance
     int32_t newDist = dDist + currDist;      // new distance
     return(newDist);
 }
@@ -70,6 +72,8 @@ void main(void)
     BCSCTL1 = CALBC1_1MHZ;
     P1DIR |= 0x03;              // set led outputs
     P1OUT &= ~0x03;             // clear led outputs
+    P2DIR &= ~0x08;             // P2.3 as input
+    P2SEL |= 0x08;              // P2.3 as CCI1B
 
     UARTInit();         // initialize uart
     UARTSend(stop, 2);  // send stop command to robot
@@ -78,55 +82,106 @@ void main(void)
     MMA8450SetZero();   // zero out accelerometer, dont move robot while happening
     P1OUT &= ~0x01;     // turn off led after finished
 
-    TACCR0 = 5000;                          // 1 MHz / 5000 = 200Hz
+    TACCR0 = 3333;                          // 1 MHz / 5000 = 200Hz
     TACTL = TASSEL_2 | ID_0 | MC_1 | TAIE;  // SMCLK, div 1, Up mode
 
+    int16_t data[3];        // array for storing acceleration data
+    int16_t xAccel = 0;     // x component of acceleration
+    int32_t vel = 0;        // current velocity
+    int32_t dist = 0;       // distance travelled
+    uint8_t timeStep = 27;  // time step
+    int8_t step = 0;        // flag for what action is happening
+    uint8_t i = 0;          // sample counter
 
-    int16_t accelData[3];
     while(1)
     {
-        int16_t data[3];            // array for storing acceleration data
-        int16_t xAccel;             // x component of acceleration
-        static int16_t vel = 0;     // current velocity
-        static int16_t dist = 0;    // distance travelled
-        int8_t t = 20;              // time step between updates
-        static int8_t step = 0;     // flag for what action is happening
-        static uint8_t i = 0;       // sample counter
-
-        if(step == 0)
+        if(step == 0)   // drive forward, slowly increasing speed
         {
-            UARTSend(forward, 2);
-            step = 1;
-        }
+            P1OUT |= 0x02;
+            MMA8450ReadXYZ(data);   // read accelerometer
+            // convert to 16 bit signed and sum samples
+            xAccel += (data[0] > 0x07FF) ? (data[0] - 4096) : data[0];
+            P1OUT &= ~0x02;
+            i += 1;                 // increment sample counter
 
-        P1OUT |= 0x02;
-        MMA8450ReadXYZ(data);   // read accelerometer
-        // convert to 16 bit signed and sum samples
-        xAccel += (data[0] > 0x07FF) ? (data[0] - 4096) : data[0];
-        P1OUT &= ~0x02;
-        i += 1;                 // increment sample counter
-
-        if(i == 4)
-        {
-            i = 0;                              // reset sample counter
-            xAccel >>= 2;                       // divide by 4 to get average
-            vel = NewVel(xAccel, vel, t);       // Find velocity and distance
-            dist = NewDist(vel, dist, t);
-
-            if(dist >= 5000000 && step == 1)    // Stop at 12 meters
+            if(i == 8)
             {
-              UARTSend(stop, 2);
-              step = 2;
-              volatile uitn32_t j = 0;
-              for (j = 0; j < 71429; j++){};    // Wait 1 sec before reversing
-              UARTSend(reverse, 2);             // send reverse command
-            }
-            else if(dist <= 0 && step == 2)     // Stop at starting line
-            {
-              UARTSend(stop, 2);                // send stop command
+                i = 0;                                  // reset sample counter
+                xAccel >>= 3;                           // divide by 8 to get average
+                xAccel &= ~0x0003;                      // get rid of 2 LSBs for noise
+                vel = NewVel(xAccel, vel, timeStep);    // Find velocity and distance
+                dist = NewDist(vel, dist, timeStep);
+                xAccel = 0;
+
+                static uint8_t fwdSpeed[] = {64, 192};
+                UARTSend(fwdSpeed, 2);
+                fwdSpeed[0] += 1;
+                fwdSpeed[1] += 1;
+
+                if(fwdSpeed[0] == 116)
+                {
+                    step = 1;
+                }
             }
         }
+        else if(step == 1)    // Stop at 12 meters
+        {
+            dist = NewDist(vel, dist, timeStep);    // calculate distance
+            if(dist >= 78500000)
+            {
+                UARTSend(stop, 2);
+                P1OUT |= 0x01;
+                MMA8450SetZero();               // recalibrate at opposite end
+                P1OUT &= ~0x01;
+                step = 2;                       // move to next step
+                vel = 0;                        // reset velocity
+            }
+        }
+        else if(step == 2)
+        {
+            P1OUT |= 0x02;
+            MMA8450ReadXYZ(data);   // read accelerometer
+            // convert to 16 bit signed and sum samples
+            xAccel += (data[0] > 0x07FF) ? (data[0] - 4096) : data[0];
+            P1OUT &= ~0x02;
+            i += 1;                 // increment sample counter
 
-        __bis_SR_register(CPUOFF | GIE);
+            if(i == 8)
+            {
+                i = 0;                                  // reset sample counter
+                xAccel >>= 3;                           // divide by 8 to get average
+                xAccel &= ~0x0003;                      // get rid of 2 LSBs for noise
+                vel = NewVel(xAccel, vel, timeStep);    // Find velocity and distance
+                dist = NewDist(vel, dist, timeStep);
+                xAccel = 0;
+
+                static uint8_t revSpeed[] = {64, 186};
+                UARTSend(revSpeed, 2);
+                revSpeed[0] -= 1;
+                revSpeed[1] -= 1;
+
+                if(revSpeed[0] == 13)
+                {
+                    step = 3;
+                }
+            }
+        }
+        else if(step == 3)     // Stop at starting line
+        {
+            dist = NewDist(vel, dist, timeStep);
+            if(dist <= -1500000)
+            {
+                UARTSend(stop, 2);  // send stop command
+                P1OUT |= 0x01;
+                while(1)
+                {
+                  P1OUT ^= 0x03;
+                  volatile uint32_t j = 0;
+                  for(j = 0; j < 10000; j++);
+                }
+            }
+        }
+
+        __bis_SR_register(LPM1_bits | GIE);
     }
 }

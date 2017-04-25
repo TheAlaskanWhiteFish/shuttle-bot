@@ -16,8 +16,8 @@
 uint8_t forward[] = {105, 234};      // preset motor commands
 uint8_t stop[] = {0, 0};
 uint8_t reverse[] = {23, 149};
-int32_t fwdDist = 77000000;
-int32_t revDist = -2500000;
+int32_t fwdDist = 82000000;
+int32_t revDist = -90000000;
 
 #pragma vector=TIMERA1_VECTOR
 #pragma type_attribute=__interrupt
@@ -107,7 +107,7 @@ void main(void)
             {
                 i = 0;                                  // reset sample counter
                 xAccel >>= 3;                           // divide by 8 to get average
-                xAccel &= ~0x0003;                      // get rid of 2 LSBs for noise
+                //xAccel &= ~0x0003;                      // get rid of 2 LSBs for noise
                 vel = NewVel(xAccel, vel, timeStep);    // Find velocity and distance
                 dist = NewDist(vel, dist, timeStep);
                 xAccel = 0;
@@ -134,6 +134,7 @@ void main(void)
                 P1OUT &= ~0x01;
                 step = 2;           // move to next step
                 vel = 0;            // reset velocity
+                dist = 0;           // reset distance
             }
         }
         else if(step == 2)
@@ -149,12 +150,12 @@ void main(void)
             {
                 i = 0;                                  // reset sample counter
                 xAccel >>= 3;                           // divide by 8 to get average
-                xAccel &= ~0x0003;                      // get rid of 2 LSBs for noise
+                //xAccel &= ~0x0003;                      // get rid of 2 LSBs for noise
                 vel = NewVel(xAccel, vel, timeStep);    // Find velocity and distance
                 dist = NewDist(vel, dist, timeStep);
                 xAccel = 0;
 
-                static uint8_t revSpeed[] = {64, 186};
+                static uint8_t revSpeed[] = {64, 187};
                 UARTSend(revSpeed, 2);  // gradually increase speed and send it
                 revSpeed[0] -= 1;
                 revSpeed[1] -= 1;

@@ -25,10 +25,6 @@ void MMA8450Init(void)
     for(i = 0; i < 215000; i++);        // wait for power to stabilize
     I2CInitMaster();                    // initialize I2C in master mode
     I2CSetSlaveAddr(0x1C);              // set slave address for accel
-    //I2CSendRegister(XYZ_DATA_CFG, (ZDEFE | YDEFE | XDEFE));
-    //I2CSendRegister(CTRL_REG3, (IPOL | PP_OD));
-    //I2CSendRegister(CTRL_REG4, 0x01);
-    //I2CSendRegister(CTRL_REG5, 0x01);
     I2CSendRegister(CTRL_REG1,          // set active mode, +/-2g, 200Hz sample
                    (FS_2G | DATA_RATE_400));
 }

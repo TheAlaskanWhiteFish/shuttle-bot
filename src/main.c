@@ -72,8 +72,6 @@ void main(void)
     BCSCTL1 = CALBC1_1MHZ;
     P1DIR |= 0x03;              // set led outputs
     P1OUT &= ~0x03;             // clear led outputs
-    P2DIR &= ~0x08;             // P2.3 as input
-    P2SEL |= 0x08;              // P2.3 as CCI1B
 
     UARTInit();         // initialize uart
     UARTSend(stop, 2);  // send stop command to robot
@@ -82,14 +80,14 @@ void main(void)
     MMA8450SetZero();   // zero out accelerometer, dont move robot while happening
     P1OUT &= ~0x01;     // turn off led after finished
 
-    TACCR0 = 3333;                          // 1 MHz / 5000 = 200Hz
+    TACCR0 = 3333;                          // 1 MHz / 3333 = 300Hz
     TACTL = TASSEL_2 | ID_0 | MC_1 | TAIE;  // SMCLK, div 1, Up mode
 
     int16_t data[3];        // array for storing acceleration data
     int16_t xAccel = 0;     // x component of acceleration
     int32_t vel = 0;        // current velocity
     int32_t dist = 0;       // distance travelled
-    uint8_t timeStep = 27;  // time step
+    uint8_t timeStep = 27;  // time step between averaged samples
     int8_t step = 0;        // flag for what action is happening
     uint8_t i = 0;          // sample counter
 
@@ -114,13 +112,13 @@ void main(void)
                 xAccel = 0;
 
                 static uint8_t fwdSpeed[] = {64, 192};
-                UARTSend(fwdSpeed, 2);
+                UARTSend(fwdSpeed, 2);  // increase speed gradually and send it
                 fwdSpeed[0] += 1;
                 fwdSpeed[1] += 1;
 
                 if(fwdSpeed[0] == 116)
                 {
-                    step = 1;
+                    step = 1;   // move to next step
                 }
             }
         }
@@ -129,12 +127,12 @@ void main(void)
             dist = NewDist(vel, dist, timeStep);    // calculate distance
             if(dist >= 78500000)
             {
-                UARTSend(stop, 2);
+                UARTSend(stop, 2);  // stop robot
                 P1OUT |= 0x01;
-                MMA8450SetZero();               // recalibrate at opposite end
+                MMA8450SetZero();   // recalibrate at opposite end
                 P1OUT &= ~0x01;
-                step = 2;                       // move to next step
-                vel = 0;                        // reset velocity
+                step = 2;           // move to next step
+                vel = 0;            // reset velocity
             }
         }
         else if(step == 2)
@@ -156,13 +154,13 @@ void main(void)
                 xAccel = 0;
 
                 static uint8_t revSpeed[] = {64, 186};
-                UARTSend(revSpeed, 2);
+                UARTSend(revSpeed, 2);  // gradually increase speed and send it
                 revSpeed[0] -= 1;
                 revSpeed[1] -= 1;
 
                 if(revSpeed[0] == 13)
                 {
-                    step = 3;
+                    step = 3;   // move to next step
                 }
             }
         }
@@ -173,7 +171,7 @@ void main(void)
             {
                 UARTSend(stop, 2);  // send stop command
                 P1OUT |= 0x01;
-                while(1)
+                while(1)            // done, loop 5ever and blinkleds
                 {
                   P1OUT ^= 0x03;
                   volatile uint32_t j = 0;
@@ -182,6 +180,6 @@ void main(void)
             }
         }
 
-        __bis_SR_register(LPM1_bits | GIE);
+        __bis_SR_register(LPM1_bits | GIE); // go to sleep
     }
 }
